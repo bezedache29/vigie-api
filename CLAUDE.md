@@ -1,0 +1,102 @@
+# CLAUDE.md
+
+Ce fichier donne le contexte du projet à Claude Code pour travailler efficacement dessus.
+
+## Vue d'ensemble
+
+**Vigie API** est le backend Laravel d'un agent de veille technologique automatisé. Il collecte du contenu depuis plusieurs sources (RSS, YouTube, Reddit, recherche web), le résume via l'API Claude, et l'expose via une API REST à un frontend React séparé (`vigie-app`). Il envoie aussi des digests par email.
+
+Nom complet du produit : **Vigie** — "ton agent IA qui surveille le web, YouTube et Reddit pour te livrer l'essentiel de la tech, résumé et trié."
+
+## Stack
+
+- **Framework** : Laravel (dernière version stable)
+- **Auth** : Laravel Sanctum, scaffoldé via `laravel/breeze --api`
+- **Queues** : Redis + Laravel Horizon
+- **DB** : PostgreSQL (ou MySQL — à confirmer selon l'environnement)
+- **Frontend** : projet React séparé (Vite), pas dans ce repo — consomme cette API en REST
+- **IA** : API Anthropic (Claude) pour les résumés
+
+## Architecture
+
+Flux général :
+
+```
+Sources → Collecteurs (jobs planifiés) → items (DB brute) → dédup
+  → Job de résumé (API Claude) → summaries (DB enrichie)
+  → API REST (dashboard React) + Mailable (digest email)
+```
+
+### Modèles principaux
+
+- `Source` — une source à surveiller (`type`: rss/youtube/twitter/reddit/web_search, `url_or_query`, `config` json, `is_active`)
+- `Item` — un contenu brut collecté depuis une source (`external_id` pour dédup, `raw_content`, `status`: pending/summarized/ignored/error)
+- `Summary` — le résumé IA d'un item (`summary_text`, `tags` json, `relevance_score` 0-100, `model_used`)
+- `Digest` — historique des envois (`item_ids`, `channel`: email/dashboard, `sent_at`)
+- `User` / préférences — mots-clés suivis, fréquence de digest, sources activées
+
+### Collecteurs
+
+Chaque type de source implémente une interface commune (ex: `SourceCollector` avec `fetch(): Collection<Item>`), déclenchée par un job planifié dédié :
+
+- `FetchRssSource` — parsing RSS classique
+- `FetchYoutubeSource` — YouTube Data API v3
+- `FetchRedditSource` — API Reddit officielle
+- `FetchWebSearchSource` — API de recherche web (SerpAPI/Brave), moins fréquent (1x/jour)
+- Twitter/X volontairement pas encore implémenté (API officielle coûteuse) — à ajouter plus tard si besoin
+
+### Résumé IA
+
+Job `SummarizeItem` : prend les items `pending`, appelle l'API Claude avec un prompt structuré demandant un JSON strict (`summary`, `tags`, `relevance_score`), stocke le résultat, passe l'item en `summarized`. Traité en asynchrone via les Queues.
+
+## Conventions de code
+
+- Suivre les conventions Laravel standards (PSR-12, resource controllers, form requests pour la validation)
+- Les collecteurs de sources vivent dans `app/Services/Collectors/`
+- Les jobs de fond (collecte, résumé) dans `app/Jobs/`
+- Utiliser les Form Requests pour toute validation d'entrée API
+- Réponses API via API Resources (`JsonResource`) pour un format cohérent
+- Tests : Pest ou PHPUnit (à confirmer selon le setup du repo) — chaque collecteur et le pipeline de résumé doivent être testés avec des mocks HTTP
+
+## Commandes utiles
+
+```bash
+# Lancer le serveur de dev
+php artisan serve
+
+# Lancer les workers de queue
+php artisan horizon
+
+# Lancer le scheduler en local (pour tester les jobs planifiés)
+php artisan schedule:work
+
+# Tests
+php artisan test
+
+# Tester un collecteur manuellement
+php artisan vigie:fetch-source {source_id}
+
+# Migrations
+php artisan migrate
+```
+
+## Auth
+
+- Sanctum en mode API (pas Blade, pas Inertia)
+- Le frontend React est un client séparé : vérifier si l'auth se fait en cookies SPA (same-domain, `SANCTUM_STATEFUL_DOMAINS`) ou en tokens Bearer (domaines différents) selon l'environnement de déploiement
+
+## Points d'attention
+
+- Respecter les rate limits de chaque API externe (YouTube, Reddit, Claude) pour éviter les blocages
+- Tronquer le `raw_content` avant envoi à l'API Claude si trop long (limite de tokens)
+- Le `relevance_score` sert à filtrer le bruit dans les digests — ne pas l'ignorer côté frontend/mailable
+- Ne jamais committer de clés API (`.env` uniquement, vérifier `.gitignore`)
+
+## Roadmap (paliers de développement)
+
+1. Squelette : migrations + 1 collecteur RSS fonctionnel
+2. Résumé IA : intégration API Claude + job de résumé
+3. Automatisation : Scheduler + Queues/Horizon + collecteurs YouTube/Reddit
+4. API complète pour le dashboard React (Sanctum)
+5. Digest email (Mailable + planification + scoring par préférences utilisateur)
+6. Optionnel : recherche web générique, déduplication sémantique (embeddings), X/Twitter
