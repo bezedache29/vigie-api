@@ -10,6 +10,6 @@ Artisan::command('inspire', function () {
 
 // Veille 2x/jour (matin + soir), pas de polling continu.
 Schedule::command('vigie:dispatch-fetch-jobs')
-    ->twiceDaily(8, 18)
+    ->twiceDaily(11, 18)
     ->timezone('Europe/Paris')
     ->withoutOverlapping();
