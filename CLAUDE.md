@@ -4,7 +4,7 @@ Ce fichier donne le contexte du projet à Claude Code pour travailler efficaceme
 
 ## Vue d'ensemble
 
-**Vigie API** est le backend Laravel d'un agent de veille technologique automatisé. Il collecte du contenu depuis plusieurs sources (RSS, YouTube, Reddit, recherche web), le résume via l'API Claude, et l'expose via une API REST à un frontend React séparé (`vigie-app`). Il envoie aussi des digests par email.
+**Vigie API** est le backend Laravel d'un agent de veille technologique automatisé. Il collecte du contenu depuis plusieurs sources (RSS, YouTube, Reddit, recherche web), le résume via l'API OpenAI, et l'expose via une API REST à un frontend React séparé (`vigie-app`). Il envoie aussi des digests par email.
 
 Nom complet du produit : **Vigie** — "ton agent IA qui surveille le web, YouTube et Reddit pour te livrer l'essentiel de la tech, résumé et trié."
 
@@ -15,7 +15,7 @@ Nom complet du produit : **Vigie** — "ton agent IA qui surveille le web, YouTu
 - **Queues** : Redis + Laravel Horizon
 - **DB** : PostgreSQL (ou MySQL — à confirmer selon l'environnement)
 - **Frontend** : projet React séparé (Vite), pas dans ce repo — consomme cette API en REST
-- **IA** : API Anthropic (Claude) pour les résumés
+- **IA** : API OpenAI (`gpt-4o-mini` par défaut, voir `config/llm.php`) pour les résumés
 
 ## Architecture
 
@@ -23,7 +23,7 @@ Flux général :
 
 ```
 Sources → Collecteurs (jobs planifiés) → items (DB brute) → dédup
-  → Job de résumé (API Claude) → summaries (DB enrichie)
+  → Job de résumé (API OpenAI) → summaries (DB enrichie)
   → API REST (dashboard React) + Mailable (digest email)
 ```
 
@@ -47,7 +47,7 @@ Chaque type de source implémente une interface commune (ex: `SourceCollector` a
 
 ### Résumé IA
 
-Job `SummarizeItem` : prend les items `pending`, appelle l'API Claude avec un prompt structuré demandant un JSON strict (`summary`, `tags`, `relevance_score`), stocke le résultat, passe l'item en `summarized`. Traité en asynchrone via les Queues.
+Job `SummarizeItem` : prend un item `pending`, appelle l'API OpenAI (`app/Services/OpenAiSummarizer.php`, mode `response_format: json_object`) avec un prompt structuré demandant un JSON strict (`summary`, `tags`, `relevance_score`), stocke le résultat dans `Summary`, passe l'item en `summarized` (ou `error` si l'appel échoue). Traité en asynchrone via les Queues.
 
 ## Conventions de code
 
@@ -96,15 +96,15 @@ git config core.hooksPath .githooks
 
 ## Points d'attention
 
-- Respecter les rate limits de chaque API externe (YouTube, Reddit, Claude) pour éviter les blocages
-- Tronquer le `raw_content` avant envoi à l'API Claude si trop long (limite de tokens)
+- Respecter les rate limits de chaque API externe (YouTube, Reddit, OpenAI) pour éviter les blocages
+- Tronquer le `raw_content` avant envoi à l'API OpenAI si trop long (limite de tokens, voir `OpenAiSummarizer::MAX_CONTENT_LENGTH`)
 - Le `relevance_score` sert à filtrer le bruit dans les digests — ne pas l'ignorer côté frontend/mailable
 - Ne jamais committer de clés API (`.env` uniquement, vérifier `.gitignore`)
 
 ## Roadmap (paliers de développement)
 
 1. Squelette : migrations + 1 collecteur RSS fonctionnel
-2. Résumé IA : intégration API Claude + job de résumé
+2. Résumé IA : intégration API OpenAI + job de résumé
 3. Automatisation : Scheduler + Queues/Horizon + collecteurs YouTube/Reddit
 4. API complète pour le dashboard React (Sanctum)
 5. Digest email (Mailable + planification + scoring par préférences utilisateur)

@@ -16,11 +16,11 @@ Roadmap de développement de Vigie API, découpée par paliers (voir `CLAUDE.md`
 
 ## 2. Résumé IA
 
-- [ ] Intégration API Claude (client/service dédié)
-- [ ] Job `SummarizeItem` (prompt structuré → JSON `summary`/`tags`/`relevance_score`)
-- [ ] Troncature du `raw_content` avant envoi (limite tokens)
-- [ ] Passage des items `pending` → `summarized`
-- [ ] Tests avec mocks HTTP
+- [x] Intégration API OpenAI (client/service dédié)
+- [x] Job `SummarizeItem` (prompt structuré → JSON `summary`/`tags`/`relevance_score`)
+- [x] Troncature du `raw_content` avant envoi (limite tokens)
+- [x] Passage des items `pending` → `summarized`
+- [x] Tests avec mocks HTTP
 
 ## 3. Automatisation
 
