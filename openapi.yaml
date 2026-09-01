@@ -17,6 +17,20 @@ servers:
 security:
   - bearerAuth: []
 
+tags:
+  - name: Auth
+    description: Authentification (login/logout, Bearer token)
+  - name: Sources
+    description: Sources surveillées (RSS, YouTube, Reddit...)
+  - name: Items
+    description: Contenus collectés depuis les sources
+  - name: Summaries
+    description: Résumés IA des items (lecture seule)
+  - name: Digests
+    description: Historique des digests envoyés (lecture seule)
+  - name: Preferences
+    description: Préférences de l'utilisateur (mots-clés, fréquence, sources activées)
+
 components:
   securitySchemes:
     bearerAuth:
@@ -185,6 +199,7 @@ components:
 paths:
   /login:
     post:
+      tags: [Auth]
       summary: Authentification
       security: []
       requestBody:
@@ -219,6 +234,7 @@ paths:
 
   /logout:
     post:
+      tags: [Auth]
       summary: Révoque le token courant
       responses:
         '204':
@@ -228,6 +244,7 @@ paths:
 
   /user:
     get:
+      tags: [Auth]
       summary: Utilisateur authentifié
       responses:
         '200':
@@ -237,6 +254,7 @@ paths:
 
   /sources:
     get:
+      tags: [Sources]
       summary: Liste des sources
       responses:
         '200':
@@ -251,6 +269,7 @@ paths:
                     items:
                       $ref: '#/components/schemas/Source'
     post:
+      tags: [Sources]
       summary: Crée une source
       requestBody:
         required: true
@@ -278,11 +297,13 @@ paths:
         required: true
         schema: { type: integer }
     get:
+      tags: [Sources]
       summary: Détail d'une source
       responses:
         '200':
           description: OK
     put:
+      tags: [Sources]
       summary: Met à jour une source
       requestBody:
         content:
@@ -295,6 +316,7 @@ paths:
         '422':
           $ref: '#/components/responses/ValidationError'
     delete:
+      tags: [Sources]
       summary: Supprime une source
       responses:
         '204':
@@ -302,6 +324,7 @@ paths:
 
   /items:
     get:
+      tags: [Items]
       summary: Liste des items collectés (paginée, plus récents en premier)
       responses:
         '200':
@@ -323,11 +346,13 @@ paths:
         required: true
         schema: { type: integer }
     get:
+      tags: [Items]
       summary: Détail d'un item (avec son résumé s'il existe)
       responses:
         '200':
           description: OK
     put:
+      tags: [Items]
       summary: Bascule manuelle du statut (pending ↔ ignored uniquement)
       requestBody:
         content:
@@ -347,6 +372,7 @@ paths:
 
   /summaries:
     get:
+      tags: [Summaries]
       summary: Liste des résumés (lecture seule)
       responses:
         '200':
@@ -359,6 +385,7 @@ paths:
         required: true
         schema: { type: integer }
     get:
+      tags: [Summaries]
       summary: Détail d'un résumé
       responses:
         '200':
@@ -366,6 +393,7 @@ paths:
 
   /digests:
     get:
+      tags: [Digests]
       summary: Historique des digests envoyés (lecture seule)
       responses:
         '200':
@@ -378,6 +406,7 @@ paths:
         required: true
         schema: { type: integer }
     get:
+      tags: [Digests]
       summary: Détail d'un digest
       responses:
         '200':
@@ -385,6 +414,7 @@ paths:
 
   /preferences:
     get:
+      tags: [Preferences]
       summary: Préférences de l'utilisateur authentifié (créées à la volée si absentes)
       responses:
         '200':
@@ -397,6 +427,7 @@ paths:
                   data:
                     $ref: '#/components/schemas/UserPreference'
     put:
+      tags: [Preferences]
       summary: Met à jour les préférences (mots-clés, fréquence, sources activées)
       requestBody:
         content:
