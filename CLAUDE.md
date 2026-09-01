@@ -96,8 +96,10 @@ git config core.hooksPath .githooks
 
 ## Auth
 
-- Sanctum en mode API (pas Blade, pas Inertia)
-- Le frontend React est un client séparé : vérifier si l'auth se fait en cookies SPA (same-domain, `SANCTUM_STATEFUL_DOMAINS`) ou en tokens Bearer (domaines différents) selon l'environnement de déploiement
+- Sanctum en mode **Bearer token** (personal access tokens), pas de cookies SPA / `SANCTUM_STATEFUL_DOMAINS` — même pattern que `carnet-spots-api`
+- App mono-utilisateur : pas d'endpoint `/register` public. `POST /api/login` (email/password/device_name, throttlé) retourne un token via `User::createToken()`. `POST /api/logout` (auth:sanctum) révoque le token courant
+- Le frontend React stocke le token et l'envoie en header `Authorization: Bearer {token}`
+- Routes protégées par `auth:sanctum` dans `routes/api.php` : `sources` (CRUD complet), `items` (index/show/update — seul `status` pending↔ignored est modifiable manuellement), `summaries` et `digests` (lecture seule), `preferences` (singleton par utilisateur, créé paresseusement, expose `keywords`/`digest_frequency`/`active_source_ids` via la pivot `source_user`)
 
 ## Points d'attention
 

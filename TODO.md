@@ -32,11 +32,11 @@ Roadmap de développement de Vigie API, découpée par paliers (voir `CLAUDE.md`
 
 ## 4. API pour le dashboard React
 
-- [ ] Setup Sanctum (mode API, décider cookies SPA vs Bearer selon déploiement)
-- [ ] Routes API resource (`sources`, `items`, `summaries`, `digests`)
-- [ ] Form Requests pour validation
-- [ ] API Resources (`JsonResource`) pour les réponses
-- [ ] Endpoints préférences utilisateur (mots-clés, fréquence, sources activées)
+- [x] Setup Sanctum (Bearer token, pas de cookies SPA)
+- [x] Routes API resource (`sources`, `items`, `summaries`, `digests`)
+- [x] Form Requests pour validation
+- [x] API Resources (`JsonResource`) pour les réponses
+- [x] Endpoints préférences utilisateur (mots-clés, fréquence, sources activées)
 
 ## 5. Digest email
 

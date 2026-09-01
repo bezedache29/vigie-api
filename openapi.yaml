@@ -22,7 +22,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      description: Token Sanctum (Authorization Bearer)
+      description: Token Sanctum (Authorization Bearer), obtenu via POST /login
 
   schemas:
     Source:
@@ -45,6 +45,29 @@ components:
           nullable: true
         is_active:
           type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SourceInput:
+      type: object
+      required: [name, type, url_or_query]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [rss, youtube, twitter, reddit, web_search]
+        url_or_query:
+          type: string
+        config:
+          type: object
+          nullable: true
+        is_active:
+          type: boolean
 
     Item:
       type: object
@@ -53,8 +76,6 @@ components:
           type: integer
         source_id:
           type: integer
-        external_id:
-          type: string
         title:
           type: string
           nullable: true
@@ -71,6 +92,11 @@ components:
         status:
           type: string
           enum: [pending, summarized, ignored, error]
+        summary:
+          $ref: '#/components/schemas/Summary'
+        created_at:
+          type: string
+          format: date-time
 
     Summary:
       type: object
@@ -91,6 +117,45 @@ components:
           maximum: 100
         model_used:
           type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Digest:
+      type: object
+      properties:
+        id:
+          type: integer
+        item_ids:
+          type: array
+          items:
+            type: integer
+        channel:
+          type: string
+          enum: [email, dashboard]
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    UserPreference:
+      type: object
+      properties:
+        keywords:
+          type: array
+          items:
+            type: string
+          nullable: true
+        digest_frequency:
+          type: string
+          enum: [daily, weekly]
+        active_source_ids:
+          type: array
+          items:
+            type: integer
 
     Error:
       type: object
@@ -98,6 +163,261 @@ components:
         message:
           type: string
 
-# Les endpoints seront documentés au fur et à mesure de leur implémentation
-# (voir TODO.md, palier "API complète pour le dashboard React").
-paths: {}
+  responses:
+    Unauthorized:
+      description: Non authentifié
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Erreur de validation
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              errors:
+                type: object
+
+paths:
+  /login:
+    post:
+      summary: Authentification
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, device_name]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                device_name:
+                  type: string
+                  example: "iphone-de-chris"
+      responses:
+        '200':
+          description: Token émis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /logout:
+    post:
+      summary: Révoque le token courant
+      responses:
+        '204':
+          description: Déconnecté
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /user:
+    get:
+      summary: Utilisateur authentifié
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /sources:
+    get:
+      summary: Liste des sources
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Source'
+    post:
+      summary: Crée une source
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SourceInput'
+      responses:
+        '201':
+          description: Créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Source'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /sources/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      summary: Détail d'une source
+      responses:
+        '200':
+          description: OK
+    put:
+      summary: Met à jour une source
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SourceInput'
+      responses:
+        '200':
+          description: OK
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      summary: Supprime une source
+      responses:
+        '204':
+          description: Supprimée
+
+  /items:
+    get:
+      summary: Liste des items collectés (paginée, plus récents en premier)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Item'
+
+  /items/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      summary: Détail d'un item (avec son résumé s'il existe)
+      responses:
+        '200':
+          description: OK
+    put:
+      summary: Bascule manuelle du statut (pending ↔ ignored uniquement)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [pending, ignored]
+      responses:
+        '200':
+          description: OK
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /summaries:
+    get:
+      summary: Liste des résumés (lecture seule)
+      responses:
+        '200':
+          description: OK
+
+  /summaries/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      summary: Détail d'un résumé
+      responses:
+        '200':
+          description: OK
+
+  /digests:
+    get:
+      summary: Historique des digests envoyés (lecture seule)
+      responses:
+        '200':
+          description: OK
+
+  /digests/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      summary: Détail d'un digest
+      responses:
+        '200':
+          description: OK
+
+  /preferences:
+    get:
+      summary: Préférences de l'utilisateur authentifié (créées à la volée si absentes)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserPreference'
+    put:
+      summary: Met à jour les préférences (mots-clés, fréquence, sources activées)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keywords:
+                  type: array
+                  items:
+                    type: string
+                digest_frequency:
+                  type: string
+                  enum: [daily, weekly]
+                source_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: Remplace la liste des sources activées pour cet utilisateur
+      responses:
+        '200':
+          description: OK
+        '422':
+          $ref: '#/components/responses/ValidationError'

@@ -17,6 +17,10 @@ class UserPreference extends Model
         'keywords' => 'array',
     ];
 
+    protected $attributes = [
+        'digest_frequency' => 'daily',
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
