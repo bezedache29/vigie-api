@@ -40,9 +40,9 @@ Roadmap de développement de Vigie API, découpée par paliers (voir `CLAUDE.md`
 
 ## 5. Digest email
 
-- [ ] Mailable de digest
-- [ ] Planification d'envoi (scheduler)
-- [ ] Scoring/filtrage par `relevance_score` + préférences utilisateur
+- [x] Mailable de digest
+- [x] Planification d'envoi (scheduler)
+- [x] Scoring/filtrage par `relevance_score` + préférences utilisateur
 
 ## 6. Optionnel
 

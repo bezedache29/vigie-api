@@ -11,7 +11,7 @@ Nom complet du produit : **Vigie** — "ton agent IA qui surveille le web, YouTu
 ## Stack
 
 - **Framework** : Laravel (dernière version stable)
-- **Auth** : Laravel Sanctum, scaffoldé via `laravel/breeze --api`
+- **Auth** : Laravel Sanctum (`php artisan install:api`), mode Bearer token — voir section Auth
 - **Queues** : Redis + Laravel Horizon
 - **DB** : PostgreSQL (ou MySQL — à confirmer selon l'environnement)
 - **Frontend** : projet React séparé (Vite), pas dans ce repo — consomme cette API en REST
@@ -51,6 +51,10 @@ Planification : le job `FetchSource` (queue Redis) exécute un collecteur pour u
 
 Job `SummarizeItem` : prend un item `pending`, appelle l'API OpenAI (`app/Services/OpenAiSummarizer.php`, mode `response_format: json_object`) avec un prompt structuré demandant un JSON strict (`summary`, `tags`, `relevance_score`), stocke le résultat dans `Summary`, passe l'item en `summarized` (ou `error` si l'appel échoue). Traité en asynchrone via les Queues.
 
+### Digest email
+
+`App\Services\DigestBuilder` décide, par utilisateur : si un envoi est dû (`isDue`, selon `digest_frequency` — daily : pas déjà envoyé aujourd'hui, weekly : pas envoyé depuis 7 jours) et quels items l'accompagnent (`eligibleItems` : `status=summarized`, `relevance_score >= config('vigie.digest.min_relevance_score')` (50 par défaut), créés depuis le dernier digest, filtrés par les sources activées de l'utilisateur si `source_user` en contient, et par ses `keywords` s'il en a). La commande `vigie:send-digests` (queue Redis via `DigestMail implements ShouldQueue`) envoie `DigestMail` (markdown, `resources/views/emails/digest.blade.php`) et enregistre un `Digest` (`item_ids`, `channel: email`, `sent_at`). Planifiée tous les jours à 18h30 (Europe/Paris), après la collecte du soir.
+
 ## Conventions de code
 
 - Suivre les conventions Laravel standards (PSR-12, resource controllers, form requests pour la validation)
@@ -81,6 +85,9 @@ php artisan vigie:fetch-source {source_id}
 
 # Dispatcher la collecte de toutes les sources actives (ce que fait le scheduler)
 php artisan vigie:dispatch-fetch-jobs
+
+# Envoyer les digests dus (ce que fait le scheduler à 18h30)
+php artisan vigie:send-digests
 
 # Migrations
 php artisan migrate

@@ -13,3 +13,10 @@ Schedule::command('vigie:dispatch-fetch-jobs')
     ->twiceDaily(11, 18)
     ->timezone('Europe/Paris')
     ->withoutOverlapping();
+
+// Digest email : après la collecte du soir, le temps que le résumé IA
+// (asynchrone) ait traité les nouveaux items.
+Schedule::command('vigie:send-digests')
+    ->dailyAt('18:30')
+    ->timezone('Europe/Paris')
+    ->withoutOverlapping();
