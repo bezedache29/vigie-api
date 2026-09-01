@@ -5,7 +5,7 @@ Roadmap de développement de Vigie API, découpée par paliers (voir `CLAUDE.md`
 ## 1. Squelette
 
 - [x] Init Laravel (`laravel new` ou `composer create-project`)
-- [ ] Installer des agents/commands pour les tests (PEST) a effectuer a chaque nouveau model/controller/feature et pour la review de code avant chaque push
+- [x] Installer des agents/commands pour les tests (PEST) a effectuer a chaque nouveau model/controller/feature et pour la review de code avant chaque push
 - [x] Config `.env` (DB, etc.) + vérifier `.gitignore`
 - [x] Migrations : `sources`, `items`, `summaries`, `digests`, `users` (+ préférences)
 - [x] Modèles Eloquent + relations

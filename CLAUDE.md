@@ -56,7 +56,8 @@ Job `SummarizeItem` : prend les items `pending`, appelle l'API Claude avec un pr
 - Les jobs de fond (collecte, résumé) dans `app/Jobs/`
 - Utiliser les Form Requests pour toute validation d'entrée API
 - Réponses API via API Resources (`JsonResource`) pour un format cohérent
-- Tests : Pest ou PHPUnit (à confirmer selon le setup du repo) — chaque collecteur et le pipeline de résumé doivent être testés avec des mocks HTTP
+- Tests : Pest — chaque nouveau model/controller/feature doit avoir des tests, et chaque collecteur / le pipeline de résumé doivent être testés avec des mocks HTTP (`Http::fake()`)
+- Avant chaque push : la suite Pest doit passer (hook `pre-push`, voir ci-dessous) et une revue de code doit être faite (skill `/code-review`)
 
 ## Commandes utiles
 
@@ -78,6 +79,14 @@ php artisan vigie:fetch-source {source_id}
 
 # Migrations
 php artisan migrate
+```
+
+## Hooks git
+
+Un hook `pre-push` (`.githooks/pre-push`) fait échouer le push si la suite Pest ne passe pas. Il est versionné dans `.githooks/` (les hooks natifs `.git/hooks/` ne le sont pas) et doit être activé une fois par clone :
+
+```bash
+git config core.hooksPath .githooks
 ```
 
 ## Auth

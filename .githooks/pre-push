@@ -1,0 +1,9 @@
+#!/bin/sh
+# Bloque le push si la suite de tests Pest échoue.
+# Activé via: git config core.hooksPath .githooks
+
+if [ -f vendor/bin/pest ]; then
+    vendor/bin/pest
+else
+    php artisan test
+fi
