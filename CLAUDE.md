@@ -45,7 +45,7 @@ Chaque type de source implémente l'interface commune `SourceCollector` (`fetch(
 - `FetchWebSearchSource` — API de recherche web (SerpAPI/Brave), moins fréquent (1x/jour) — pas encore implémenté (palier 6)
 - Twitter/X volontairement pas encore implémenté (API officielle coûteuse) — à ajouter plus tard si besoin
 
-Planification : le job `FetchSource` (queue Redis) exécute un collecteur pour une source et dispatch un `SummarizeItem` par nouvel item. La commande `vigie:dispatch-fetch-jobs` dispatch un `FetchSource` par source active ayant un collecteur, appelée toutes les 30 min par le scheduler (`routes/console.php`, `withoutOverlapping()`).
+Planification : le job `FetchSource` (queue Redis) exécute un collecteur pour une source et dispatch un `SummarizeItem` par nouvel item. La commande `vigie:dispatch-fetch-jobs` dispatch un `FetchSource` par source active ayant un collecteur, appelée 2x/jour à 8h et 18h (Europe/Paris) par le scheduler (`routes/console.php`, `withoutOverlapping()`) — pas de polling continu, cadence volontairement calée sur une lecture matin/soir plutôt que du temps réel.
 
 ### Résumé IA
 
@@ -101,7 +101,7 @@ git config core.hooksPath .githooks
 
 ## Points d'attention
 
-- Respecter les rate limits de chaque API externe (YouTube, Reddit, OpenAI) pour éviter les blocages : cadence de collecte modérée (30 min, `withoutOverlapping`), endpoint YouTube économe en quota (`playlistItems` plutôt que `search`), token Reddit mis en cache
+- Respecter les rate limits de chaque API externe (YouTube, Reddit, OpenAI) pour éviter les blocages : cadence de collecte 2x/jour (`withoutOverlapping`), endpoint YouTube économe en quota (`playlistItems` plutôt que `search`), token Reddit mis en cache
 - Tronquer le `raw_content` avant envoi à l'API OpenAI si trop long (limite de tokens, voir `OpenAiSummarizer::MAX_CONTENT_LENGTH`)
 - Le `relevance_score` sert à filtrer le bruit dans les digests — ne pas l'ignorer côté frontend/mailable
 - Ne jamais committer de clés API (`.env` uniquement, vérifier `.gitignore`)

@@ -8,8 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Collecte périodique de toutes les sources actives (rss/youtube/reddit).
-// Cadence volontairement modérée pour respecter les rate limits des API externes.
+// Veille 2x/jour (matin + soir), pas de polling continu.
 Schedule::command('vigie:dispatch-fetch-jobs')
-    ->everyThirtyMinutes()
+    ->twiceDaily(8, 18)
+    ->timezone('Europe/Paris')
     ->withoutOverlapping();
