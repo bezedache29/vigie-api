@@ -2,14 +2,13 @@
 
 namespace App\Services\Collectors;
 
-use App\Models\Item;
 use App\Models\Source;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 use SimpleXMLElement;
 
-class FetchRssSource implements SourceCollector
+class FetchRssSource extends AbstractSourceCollector
 {
     public function fetch(Source $source): Collection
     {
@@ -22,17 +21,10 @@ class FetchRssSource implements SourceCollector
             throw new RuntimeException("Flux RSS invalide pour la source [{$source->id}].");
         }
 
-        return collect(iterator_to_array($xml->channel->item, false))
-            ->map(fn (SimpleXMLElement $entry) => $this->toAttributes($entry))
-            ->reject(fn (array $attributes) => Item::query()
-                ->where('source_id', $source->id)
-                ->where('external_id', $attributes['external_id'])
-                ->exists())
-            ->map(fn (array $attributes) => Item::create([
-                'source_id' => $source->id,
-                ...$attributes,
-            ]))
-            ->values();
+        $attributesList = collect(iterator_to_array($xml->channel->item, false))
+            ->map(fn (SimpleXMLElement $entry) => $this->toAttributes($entry));
+
+        return $this->persistNewItems($source, $attributesList);
     }
 
     private function toAttributes(SimpleXMLElement $entry): array

@@ -24,11 +24,11 @@ Roadmap de développement de Vigie API, découpée par paliers (voir `CLAUDE.md`
 
 ## 3. Automatisation
 
-- [ ] Setup Redis + Horizon
-- [ ] Scheduler (jobs planifiés par type de source)
-- [ ] `FetchYoutubeSource` (YouTube Data API v3)
-- [ ] `FetchRedditSource` (API Reddit)
-- [ ] Gestion des rate limits par API externe
+- [x] Setup Redis + Horizon
+- [x] Scheduler (jobs planifiés par type de source)
+- [x] `FetchYoutubeSource` (YouTube Data API v3)
+- [x] `FetchRedditSource` (API Reddit)
+- [x] Gestion des rate limits par API externe
 
 ## 4. API pour le dashboard React
 

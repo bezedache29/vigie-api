@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'youtube' => [
+        'api_key' => env('YOUTUBE_API_KEY'),
+    ],
+
+    'reddit' => [
+        'client_id' => env('REDDIT_CLIENT_ID'),
+        'client_secret' => env('REDDIT_CLIENT_SECRET'),
+        'user_agent' => env('REDDIT_USER_AGENT', 'VigieBot/1.0'),
+    ],
+
 ];

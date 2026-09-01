@@ -22,6 +22,7 @@ services:
             - traefik-network
         depends_on:
             - mysql
+            - redis
         labels:
             - 'traefik.enable=true'
             - 'traefik.http.routers.vigie-api.rule=Host(`${APP_DOMAIN}`)'
@@ -29,6 +30,39 @@ services:
             - 'traefik.http.routers.vigie-api.tls=true'
             - 'traefik.http.services.vigie-api.loadbalancer.server.port=80'
             - 'traefik.docker.network=traefik-network'
+    horizon:
+        build:
+            context: './vendor/laravel/sail/runtimes/8.5'
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP}'
+        image: 'sail-8.5/app'
+        command: php artisan horizon
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - mysql
+            - redis
+    redis:
+        image: 'redis:alpine'
+        ports:
+            - '${FORWARD_REDIS_PORT:-6379}:6379'
+        volumes:
+            - 'vigie-api-redis:/data'
+        networks:
+            - sail
+        healthcheck:
+            test:
+                - CMD
+                - redis-cli
+                - ping
+            retries: 3
+            timeout: 5s
     mysql:
         image: 'mysql:8.4'
         ports:
@@ -90,4 +124,6 @@ networks:
         external: true
 volumes:
     vigie-api-mysql:
+        driver: local
+    vigie-api-redis:
         driver: local

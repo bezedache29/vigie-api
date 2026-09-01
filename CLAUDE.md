@@ -37,13 +37,15 @@ Sources → Collecteurs (jobs planifiés) → items (DB brute) → dédup
 
 ### Collecteurs
 
-Chaque type de source implémente une interface commune (ex: `SourceCollector` avec `fetch(): Collection<Item>`), déclenchée par un job planifié dédié :
+Chaque type de source implémente l'interface commune `SourceCollector` (`fetch(Source): Collection<Item>`), résolue par type via `CollectorResolver`. Elles héritent toutes de `AbstractSourceCollector` qui factorise la dédup + création des items (`persistNewItems`) :
 
 - `FetchRssSource` — parsing RSS classique
-- `FetchYoutubeSource` — YouTube Data API v3
-- `FetchRedditSource` — API Reddit officielle
-- `FetchWebSearchSource` — API de recherche web (SerpAPI/Brave), moins fréquent (1x/jour)
+- `FetchYoutubeSource` — YouTube Data API v3, via `playlistItems` sur la playlist "uploads" de la chaîne (1 unité de quota/appel, `url_or_query` = ID de chaîne au format `UC...`, validé au format sinon exception) plutôt que `search` (100 unités/appel) — voir Points d'attention
+- `FetchRedditSource` — API Reddit officielle (OAuth2 `client_credentials`, `url_or_query` = nom du subreddit), token mis en cache ~55 min
+- `FetchWebSearchSource` — API de recherche web (SerpAPI/Brave), moins fréquent (1x/jour) — pas encore implémenté (palier 6)
 - Twitter/X volontairement pas encore implémenté (API officielle coûteuse) — à ajouter plus tard si besoin
+
+Planification : le job `FetchSource` (queue Redis) exécute un collecteur pour une source et dispatch un `SummarizeItem` par nouvel item. La commande `vigie:dispatch-fetch-jobs` dispatch un `FetchSource` par source active ayant un collecteur, appelée toutes les 30 min par le scheduler (`routes/console.php`, `withoutOverlapping()`).
 
 ### Résumé IA
 
@@ -74,8 +76,11 @@ php artisan schedule:work
 # Tests
 php artisan test
 
-# Tester un collecteur manuellement
+# Tester un collecteur manuellement (synchrone, sans passer par la queue)
 php artisan vigie:fetch-source {source_id}
+
+# Dispatcher la collecte de toutes les sources actives (ce que fait le scheduler)
+php artisan vigie:dispatch-fetch-jobs
 
 # Migrations
 php artisan migrate
@@ -96,7 +101,7 @@ git config core.hooksPath .githooks
 
 ## Points d'attention
 
-- Respecter les rate limits de chaque API externe (YouTube, Reddit, OpenAI) pour éviter les blocages
+- Respecter les rate limits de chaque API externe (YouTube, Reddit, OpenAI) pour éviter les blocages : cadence de collecte modérée (30 min, `withoutOverlapping`), endpoint YouTube économe en quota (`playlistItems` plutôt que `search`), token Reddit mis en cache
 - Tronquer le `raw_content` avant envoi à l'API OpenAI si trop long (limite de tokens, voir `OpenAiSummarizer::MAX_CONTENT_LENGTH`)
 - Le `relevance_score` sert à filtrer le bruit dans les digests — ne pas l'ignorer côté frontend/mailable
 - Ne jamais committer de clés API (`.env` uniquement, vérifier `.gitignore`)

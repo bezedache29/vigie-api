@@ -3,8 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Source;
-use App\Services\Collectors\FetchRssSource;
-use App\Services\Collectors\SourceCollector;
+use App\Services\Collectors\CollectorResolver;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -16,7 +15,7 @@ class FetchSourceCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(CollectorResolver $resolver): int
     {
         $source = Source::find($this->argument('source_id'));
 
@@ -26,7 +25,7 @@ class FetchSourceCommand extends Command
             return self::FAILURE;
         }
 
-        $collector = $this->collectorFor($source);
+        $collector = $resolver->resolve($source);
 
         if (! $collector) {
             $this->error("Aucun collecteur disponible pour le type [{$source->type}].");
@@ -39,13 +38,5 @@ class FetchSourceCommand extends Command
         $this->info("{$items->count()} nouvel(aux) item(s) collecté(s) pour [{$source->name}].");
 
         return self::SUCCESS;
-    }
-
-    private function collectorFor(Source $source): ?SourceCollector
-    {
-        return match ($source->type) {
-            'rss' => new FetchRssSource,
-            default => null,
-        };
     }
 }

@@ -11,7 +11,7 @@ RUN apk add --no-cache \
 
 # PHP extensions via binaires pré-compilés (évite compilation from-source)
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
-RUN install-php-extensions pdo_mysql zip bcmath xml intl opcache
+RUN install-php-extensions pdo_mysql zip bcmath xml intl opcache redis
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
