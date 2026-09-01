@@ -1,0 +1,103 @@
+openapi: 3.0.3
+info:
+  title: Vigie API
+  version: 1.0.0
+  description: >
+    API backend de Vigie, l'agent IA qui surveille le web, YouTube et Reddit
+    pour livrer l'essentiel de la tech, résumé et trié.
+
+servers:
+  - url: https://{domain}/api
+    description: Local dev via Traefik (Sail)
+    variables:
+      domain:
+        default: vigie-api.dev.localhost
+        description: Valeur de APP_DOMAIN dans .env
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Token Sanctum (Authorization Bearer)
+
+  schemas:
+    Source:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Hacker News"
+        type:
+          type: string
+          enum: [rss, youtube, twitter, reddit, web_search]
+        url_or_query:
+          type: string
+          example: "https://news.ycombinator.com/rss"
+        config:
+          type: object
+          nullable: true
+        is_active:
+          type: boolean
+
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+        source_id:
+          type: integer
+        external_id:
+          type: string
+        title:
+          type: string
+          nullable: true
+        url:
+          type: string
+          nullable: true
+        raw_content:
+          type: string
+          nullable: true
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: [pending, summarized, ignored, error]
+
+    Summary:
+      type: object
+      properties:
+        id:
+          type: integer
+        item_id:
+          type: integer
+        summary_text:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        relevance_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        model_used:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+
+# Les endpoints seront documentés au fur et à mesure de leur implémentation
+# (voir TODO.md, palier "API complète pour le dashboard React").
+paths: {}
